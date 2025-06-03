@@ -10,7 +10,7 @@ CHROMA_DB_PATH = os.path.join(basedir, '..', 'data', 'contract_templates_db')
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-very-secret-dev-key'
     GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-    TAVILY_API_KEY = os.environ.get('TAVILY_API_KEY')
+    TAVILY_API_KEY = os.getenv('TAVILY_API_KEY')
     UPLOAD_FOLDER = UPLOAD_FOLDER
     CHROMA_DB_PATH = CHROMA_DB_PATH
     LANGCHAIN_TRACING_V2 = "true" # Common for LangSmith
