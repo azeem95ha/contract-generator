@@ -707,8 +707,7 @@ def init_agent_components():
         model = ChatGoogleGenerativeAI(
             model=current_app.config.get("GOOGLE_MODEL_NAME", "gemini-1.5-flash-latest"), # Use a config var
             google_api_key=google_api_key,
-            temperature=0.5, # Adjust as needed
-            convert_system_message_to_human=True
+            temperature=0.7, # Adjust as needed
         )
 
         os.makedirs(chroma_db_path, exist_ok=True)
