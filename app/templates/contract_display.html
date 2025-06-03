@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finalized Contract</title>
+    <!-- Include Marked.js if the contract content is Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact; /* Chrome, Safari */
+                color-adjust: exact; /* Firefox */
+            }
+            .contract-page {
+                margin: 0 auto; /* Center page on print */
+                box-shadow: none;
+                border: none;
+                page-break-after: always; /* Ensure each .contract-page is a new print page */
+            }
+            .no-print {
+                display: none;
+            }
+        }
+
+        body {
+            background-color: #808080; /* Grey background for the "outside paper" area */
+            margin: 0;
+            padding: 20px 0; /* Add some padding for scroll view */
+            font-family: 'Times New Roman', Times, serif; /* Classic contract font */
+            line-height: 1.5;
+            color: #000;
+        }
+
+        .contract-page {
+            background-color: white;
+            width: 210mm; /* A4 width */
+            min-height: 297mm; /* A4 height - use min-height to allow content to flow */
+            padding: 20mm 25mm 20mm 25mm; /* Margins: Top, Right, Bottom, Left */
+            margin: 20px auto; /* Center the page on screen and add top/bottom margin */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            box-shadow: 0 0 10px rgba(0,0,0,0.5); /* Drop shadow for paper effect */
+            font-size: 12pt; /* Standard contract font size */
+        }
+
+        /* Markdown styling for contract content */
+        .contract-content h1, .contract-content h2, .contract-content h3, .contract-content h4 {
+            font-family: Arial, Helvetica, sans-serif; /* Sans-serif for headings for slight contrast */
+            color: #111;
+            margin-top: 1.2em;
+            margin-bottom: 0.6em;
+        }
+        .contract-content h1 { font-size: 18pt; text-align: center; }
+        .contract-content h2 { font-size: 16pt; }
+        .contract-content h3 { font-size: 14pt; }
+        .contract-content p { margin-bottom: 0.8em; text-align: justify; }
+        .contract-content ul, .contract-content ol { margin-bottom: 0.8em; padding-left: 30px; }
+        .contract-content li { margin-bottom: 0.3em; }
+        .contract-content pre {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 10pt;
+        }
+        .contract-content code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f0f0f0;
+            padding: 1px 3px;
+            border-radius: 3px;
+            font-size: 10pt;
+        }
+         .contract-content pre code { background-color: transparent; padding: 0;}
+        .contract-content blockquote {
+            border-left: 3px solid #ccc;
+            padding-left: 15px;
+            margin-left: 0;
+            font-style: italic;
+        }
+        .contract-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 1em;
+        }
+        .contract-content th, .contract-content td {
+            border: 1px solid #555; /* Darker border for tables */
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .contract-content th {
+            background-color: #e9e9e9;
+            font-weight: bold;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .print-button-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .print-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-button-container no-print">
+        <button class="print-button" onclick="window.print()">Print Contract</button>
+    </div>
+    <div class="contract-page">
+        <div class="contract-content">
+            <!-- The contract content will be injected here -->
+            {{ contract_html_content|safe if contract_html_content else "No contract content available." }}
+        </div>
+    </div>
+
+    <script>
+        // Initialize Marked.js if contract content is Markdown
+        // This script block should be here if contract_html_content is raw markdown passed from Flask
+        // and needs client-side parsing. If Flask pre-parses it, this isn't strictly needed for display
+        // but good if you decide to pass raw markdown.
+        /*
+        document.addEventListener('DOMContentLoaded', function() {
+            const contractContentDiv = document.querySelector('.contract-content');
+            const rawMarkdown = contractContentDiv.textContent; // Assuming raw markdown is in the div
+                                                                // Or better, pass it in a hidden element or data attribute
+            if (rawMarkdown.trim() !== "No contract content available.") {
+                 marked.setOptions({
+                    gfm: true,
+                    breaks: true,
+                });
+                // This approach has issues if {{ contract_html_content|safe }} already contains HTML.
+                // Better to pass raw markdown if client-side parsing is desired.
+                // For now, assume Flask sends pre-rendered HTML for simplicity.
+                // If Flask sends RAW Markdown and you want to parse it here:
+                // contractContentDiv.innerHTML = marked.parse(rawMarkdown);
+            }
+        });
+        */
+    </script>
+</body>
+</html>

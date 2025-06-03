@@ -1,0 +1,18 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+instance/
+*.sqlite3
+*.db
+# Environment files
+.env
+# Data files (if sensitive or too large for repo)
+data/contract_templates_db/
+data/uploads/
+contract.md
+# IDE specific
+.vscode/
+.idea/

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract Generation API Interface</title>
+    <!-- Add Marked.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #5a5a5a; text-align: center; }
+        .section { margin-bottom: 30px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9;}
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="file"], textarea, select {
+            width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;
+        }
+        button {
+            background-color: #007bff; color: white; padding: 10px 15px; border: none;
+            border-radius: 4px; cursor: pointer; font-size: 16px; margin-right: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button.secondary { background-color: #6c757d; }
+        button.secondary:hover { background-color: #545b62; }
+        button.danger { background-color: #dc3545; }
+        button.danger:hover { background-color: #c82333; }
+        pre { background-color: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto;}
+        #chatHistory { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-bottom: 10px; background-color: #fff; }
+        .chat-message { margin-bottom: 8px; padding: 8px; border-radius: 4px; word-wrap: break-word; }
+        .human-message { background-color: #e1f5fe; text-align: right; margin-left: 20%;}
+        .ai-message { background-color: #f1f8e9; text-align: left; margin-right: 20%;}
+        /* Basic Markdown styling for AI messages */
+        .ai-message h1, .ai-message h2, .ai-message h3 { margin-top: 0.5em; margin-bottom: 0.25em; }
+        .ai-message p { margin-top: 0; margin-bottom: 0.5em; }
+        .ai-message ul, .ai-message ol { margin-top: 0; margin-bottom: 0.5em; padding-left: 20px; }
+        .ai-message li { margin-bottom: 0.2em; }
+        .ai-message pre { background-color: #e0e0e0; padding: 8px; border-radius: 3px; overflow-x: auto; }
+        .ai-message code { font-family: monospace; background-color: #e0e0e0; padding: 2px 4px; border-radius: 3px;}
+        .ai-message pre code { background-color: transparent; padding: 0;} /* Code inside pre shouldn't have double background */
+        .ai-message blockquote { border-left: 3px solid #ccc; padding-left: 10px; margin-left: 0; color: #555;}
+        .ai-message table { border-collapse: collapse; margin-bottom: 0.5em; width: auto; }
+        .ai-message th, .ai-message td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        .ai-message th { background-color: #f0f0f0; }
+
+        .error { color: red; font-weight: bold; }
+        .success { color: green; font-weight: bold; }
+        hr { border: 0; height: 1px; background: #ddd; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Contract Generation Assistant</h1>
+
+        <!-- Chat Section -->
+        <div class="section">
+            <h2>Chat with Agent</h2>
+            <div id="chatHistory"></div>
+            <textarea id="userInput" rows="3" placeholder="Type your message here..."></textarea>
+            <button onclick="sendMessage()">Send Message</button>
+            <p id="chatStatus"></p>
+        </div>
+        <hr>
+
+        <!-- RAG Management Section (remains the same) -->
+        <div class="section">
+            <h2>Knowledge Base Management (RAG)</h2>
+            <div>
+                <h3>Add Contract Template</h3>
+                <label for="pdfFile">PDF File:</label>
+                <input type="file" id="pdfFile" accept=".pdf">
+                <label for="contractTypeAdd">Contract Type:</label>
+                <input type="text" id="contractTypeAdd" placeholder="e.g., employment contract">
+                <label for="descriptionAdd">Description (Optional):</label>
+                <input type="text" id="descriptionAdd" placeholder="Short description of the template">
+                <button onclick="addTemplate()">Add Template</button>
+                <p id="addTemplateStatus"></p>
+            </div>
+            <br>
+            <div>
+                <h3>List Templates</h3>
+                <button onclick="listTemplates()">List All Templates</button>
+                <pre id="templateList"></pre>
+            </div>
+            <br>
+            <div>
+                <h3>Search Knowledge Base</h3>
+                <label for="searchQuery">Search Query:</label>
+                <input type="text" id="searchQuery" placeholder="e.g., payment clauses">
+                <label for="contractTypeSearch">Contract Type (Optional Filter):</label>
+                <input type="text" id="contractTypeSearch" placeholder="e.g., service agreement">
+                <button onclick="searchKnowledgeBase()">Search KB</button>
+                <pre id="searchResults"></pre>
+            </div>
+        </div>
+        <hr>
+
+        <!-- Status and Control Section (remains the same) -->
+        <div class="section">
+            <h2>Contract Status & Control</h2>
+            <button onclick="getContractStatus()">Get Current Status</button>
+            <pre id="contractStatus"></pre>
+            <br>
+        </div>
+            <button id="displayContractBtn" onclick="viewFinalContract()" class="secondary" style="display: none;">Display Contract</button>
+            <br><br> 
+            <button class="danger" onclick="resetContractState()">Reset Contract State</button>
+            <p id="resetStatus"></p>
+            
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = "/api/v1";
+        let chatHistoryStore = [];
+
+        // Configure Marked.js for sanitization and options (optional but recommended)
+        marked.setOptions({
+            pedantic: false,
+            gfm: true, // Enable GitHub Flavored Markdown
+            breaks: true, // Convert GFM line breaks into <br> tags
+            sanitize: false, // DEPRECATED and REMOVED in newer versions. Use a DOMPurify if HTML sanitization is critical.
+                             // For this example, we assume AI output is reasonably safe or you trust the source.
+                             // If dealing with untrusted Markdown, use DOMPurify:
+                             // e.g. messageDiv.innerHTML = DOMPurify.sanitize(marked.parse(text));
+            smartypants: false,
+            xhtml: false
+        });
+
+
+        async function apiCall(endpoint, method = 'GET', body = null, isFormData = false) {
+            // ... (apiCall function remains the same)
+            const options = {
+                method: method,
+                headers: {},
+            };
+            if (body) {
+                if (isFormData) {
+                    options.body = body; 
+                } else {
+                    options.headers['Content-Type'] = 'application/json';
+                    options.body = JSON.stringify(body);
+                }
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: "Unknown error structure", message: `HTTP error! status: ${response.status}` }));
+                    console.error('API Error:', errorData);
+                    throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                throw error; 
+            }
+        }
+
+        // --- Chat Functions ---
+        function displayMessage(role, text) {
+            const chatHistoryDiv = document.getElementById('chatHistory');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat-message', role === 'human' ? 'human-message' : 'ai-message');
+
+            if (role === 'ai') {
+                // Parse AI's message as Markdown and set as innerHTML
+                // WARNING: Only do this if you trust the source of the Markdown.
+                // For untrusted sources, use a sanitizer like DOMPurify.
+                // messageDiv.innerHTML = DOMPurify.sanitize(marked.parse(text));
+                messageDiv.innerHTML = marked.parse(text);
+            } else {
+                // Human messages are plain text
+                messageDiv.textContent = text;
+            }
+
+            chatHistoryDiv.appendChild(messageDiv);
+            chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+        }
+
+        async function sendMessage() {
+            // ... (sendMessage function logic remains largely the same, calls the modified displayMessage)
+            const userInput = document.getElementById('userInput').value.trim();
+            const chatStatusEl = document.getElementById('chatStatus');
+            if (!userInput) return;
+
+            displayMessage('human', userInput);
+            chatStatusEl.textContent = 'Sending...';
+            chatStatusEl.className = '';
+
+            try {
+                const payload = {
+                    user_input: userInput,
+                    chat_history: chatHistoryStore 
+                };
+                const data = await apiCall('/chat', 'POST', payload);
+                
+                displayMessage('ai', data.output); // This will now use Markdown parsing
+                chatHistoryStore = data.chat_history; 
+                document.getElementById('userInput').value = ''; 
+                chatStatusEl.textContent = 'Message sent.';
+                chatStatusEl.className = 'success';
+
+                if (data.contract_state_summary) {
+                     document.getElementById('contractStatus').textContent = JSON.stringify(data.contract_state_summary, null, 2);
+                }
+
+            } catch (error) {
+                displayMessage('ai', `Error: ${error.message}`); // Error messages from AI also get parsed (could be plain text)
+                chatStatusEl.textContent = `Error: ${error.message}`;
+                chatStatusEl.className = 'error';
+            }
+        }
+
+        // --- RAG Functions (addTemplate, listTemplates, searchKnowledgeBase) ---
+        // These remain the same as before
+        async function addTemplate() {
+            const pdfFile = document.getElementById('pdfFile').files[0];
+            const contractType = document.getElementById('contractTypeAdd').value.trim();
+            const description = document.getElementById('descriptionAdd').value.trim();
+            const statusEl = document.getElementById('addTemplateStatus');
+
+            if (!pdfFile || !contractType) {
+                statusEl.textContent = 'Error: PDF file and Contract Type are required.';
+                statusEl.className = 'error';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('pdf_file', pdfFile);
+            formData.append('contract_type', contractType);
+            formData.append('description', description);
+
+            statusEl.textContent = 'Uploading...';
+            statusEl.className = '';
+            try {
+                const data = await apiCall('/rag/templates', 'POST', formData, true);
+                statusEl.textContent = data.message || 'Template added successfully!';
+                statusEl.className = 'success';
+                document.getElementById('pdfFile').value = ''; 
+                document.getElementById('contractTypeAdd').value = '';
+                document.getElementById('descriptionAdd').value = '';
+            } catch (error) {
+                statusEl.textContent = `Error: ${error.message}`;
+                statusEl.className = 'error';
+            }
+        }
+
+        async function listTemplates() {
+            const listEl = document.getElementById('templateList');
+            listEl.textContent = 'Loading templates...';
+            try {
+                const data = await apiCall('/rag/templates');
+                // If the summary itself might contain markdown-like structures (e.g., from tool output)
+                // and you want it rendered, you could parse it too. For now, assuming it's pre-formatted text.
+                listEl.textContent = data.templates_summary || 'No templates found.';
+            } catch (error) {
+                listEl.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function searchKnowledgeBase() {
+            const query = document.getElementById('searchQuery').value.trim();
+            const contractType = document.getElementById('contractTypeSearch').value.trim();
+            const resultsEl = document.getElementById('searchResults');
+
+            if (!query) {
+                resultsEl.textContent = 'Error: Search query is required.';
+                return;
+            }
+            resultsEl.textContent = 'Searching...';
+            
+            let endpoint = `/rag/search?query=${encodeURIComponent(query)}`;
+            if (contractType) {
+                endpoint += `&contract_type=${encodeURIComponent(contractType)}`;
+            }
+
+            try {
+                const data = await apiCall(endpoint);
+                 // If the RAG search results might contain markdown and you want them rendered
+                // you could parse data.results here. For now, assuming pre-formatted text.
+                resultsEl.textContent = data.results || 'No results found.';
+            } catch (error) {
+                resultsEl.textContent = `Error: ${error.message}`;
+            }
+        }
+
+
+        // --- Status and Control Functions (getContractStatus, resetContractState) ---
+        // These remain the same
+        async function getContractStatus() {
+            const statusEl = document.getElementById('contractStatus');
+            const displayContractBtn = document.getElementById('displayContractBtn');
+            statusEl.textContent = 'Fetching status...';
+            displayContractBtn.style.display = 'none'; // Hide by default
+
+            try {
+                const data = await apiCall('/status');
+                statusEl.textContent = JSON.stringify(data.status, null, 2);
+
+                // Show "Display Contract" button only if a final draft is available
+                if (data.status && data.status.final_draft_available) {
+                    displayContractBtn.style.display = 'inline-block';
+                } else {
+                    displayContractBtn.style.display = 'none';
+                }
+            } catch (error) {
+                statusEl.textContent = `Error: ${error.message}`;
+                displayContractBtn.style.display = 'none';
+            }
+        }
+
+        function viewFinalContract() {
+            // Navigate to the new contract display page
+            // Assumes the route is /api/v1/display_contract
+            window.open(`${API_BASE_URL}/display_contract`, '_blank');
+        }
+
+        async function resetContractState() {
+            // ... (resetContractState function remains the same) ...
+            // Just ensure it calls getContractStatus() at the end to update button visibility
+            const statusEl = document.getElementById('resetStatus');
+            statusEl.textContent = 'Resetting...';
+            statusEl.className = '';
+            if (!confirm("Are you sure you want to reset the contract state? This will clear all progress.")) {
+                statusEl.textContent = '';
+                return;
+            }
+            try {
+                const data = await apiCall('/reset_state', 'POST');
+                statusEl.textContent = data.message || 'State reset successfully.';
+                statusEl.className = 'success';
+                chatHistoryStore = [];
+                document.getElementById('chatHistory').innerHTML = '';
+                getContractStatus(); // Refresh status display AND "Display Contract" button visibility
+            } catch (error) {
+                statusEl.textContent = `Error: ${error.message}`;
+                statusEl.className = 'error';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            getContractStatus(); 
+            listTemplates(); 
+        });
+    </script>
+</body>
+</html>
